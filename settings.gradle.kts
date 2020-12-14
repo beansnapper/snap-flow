@@ -1,2 +1,2 @@
-rootProject.name = "snapflow"
+rootProject.name = "snap-flow"
 
