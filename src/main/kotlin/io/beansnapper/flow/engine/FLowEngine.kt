@@ -1,48 +1,55 @@
 package io.beansnapper.flow.engine
 
+import io.beansnapper.flow.domain.Flow
+import io.beansnapper.flow.domain.Step
 import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
-///**
-// *
-// */
-//class FlowEngine(val flowData: FlowData) {
-//    private val steps:
-//
-//            private
-//    val stepMap = steps.map { StepWrapper(it) }.map { it.key to it }.toMap()
-//    private val startWrapper = stepMap[defaultStart.key] ?: throw FlowException("$defaultStart is not part of the flow")
-//
-//    internal class StepWrapper(
-//        val step: Step,
-//    ) {
-//        val key get() = step.key
-//        val name get() = step.name
-//
-//        fun run() {
-//            log.info { "$step running..." }
-//            step.action.invoke()
-//            log.info { "$step finished" }
-//        }
-//
-//        fun next(): StepWrapper? {
-//            return null
-//        }
-//
-//    }
-//
-//    fun run() {
-//        log.info { }
-//        run(startWrapper)
-//    }
-//
-//    private fun run(step: StepWrapper?) {
-//        if (step == null) return
-//        step.run()
-//        run(step.next())
-//    }
-//
-//    override fun toString(): String = "Flow [$name]"
-//
-//}
+class FlowProcessor(flow: Flow, val context: FlowContext, private val start: Step? = null) {
+    internal val flow = XFlow(flow)
+
+    fun run() {
+        log.debug { "Starting $flow" }
+        if (start != null) {
+            flow.steps[start.name]
+        }
+
+        var current = if (start != null) {
+            flow.steps[start.name] ?: throw Exception("Provided start $start is ")
+        } else flow.defaultStart
+
+        do {
+            execute(current)
+            if (current.data.terminalStep) {
+                log.debug { "Found Terminal $current" }
+                break
+            }
+            current = next(current)
+        } while (true)
+        log.debug { "$flow terminated normally" }
+    }
+
+    private fun execute(current: XFlow.XStep) {
+        try {
+            log.debug { "Executing $current" }
+            current.action.invoke()
+        } catch (e: Exception) {
+            val msg = "Uncaught exception executing $flow:$current - $e"
+            log.error { msg }
+            throw FlowException()
+        }
+    }
+
+    /**
+     * determine the next step
+     */
+    private fun next(current: XFlow.XStep): XFlow.XStep {
+        current.wires.forEach { wire ->
+            if (wire.data.predicate.test(context)) return wire.toStep;
+        }
+        throw FlowException("$current has no next step with a positive predicate")
+    }
+
+}
+

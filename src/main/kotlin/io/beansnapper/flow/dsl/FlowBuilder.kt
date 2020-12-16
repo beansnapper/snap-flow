@@ -69,8 +69,8 @@ class FlowBuilder() {
             return Wire(
                 null,
                 null,
-                RefId((fromStep ?: throw BuilderException("Wire is not fully defined")).build()),
-                RefId((toStep ?: throw BuilderException("Wire is not fully defined")).build())
+                ObjectId((fromStep ?: throw BuilderException("Wire is not fully defined")).build()),
+                ObjectId((toStep ?: throw BuilderException("Wire is not fully defined")).build())
             )
         }
 
@@ -99,9 +99,9 @@ class FlowBuilder() {
     }
 
     fun build(): Flow {
-        val theSteps = steps.values.map { it.build() }.map { RefId<Step>(it) }
-        val theWires = wires.map { it.build() }.map { RefId<Wire>(it) }
-        val theStart = RefId<Step>(
+        val theSteps = steps.values.map { it.build() }.map { ObjectId<Step>(it) }
+        val theWires = wires.map { it.build() }.map { ObjectId<Wire>(it) }
+        val theStart = ObjectId<Step>(
             defaultStart?.build() ?: throw BuilderException("The default start step wasn't defined")
         )
 

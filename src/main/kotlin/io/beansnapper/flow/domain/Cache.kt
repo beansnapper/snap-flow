@@ -1,7 +1,5 @@
-package io.beansnapper.flow.loader
+package io.beansnapper.flow.domain
 
-import io.beansnapper.flow.domain.DataObject
-import io.beansnapper.flow.domain.RefId
 import io.beansnapper.flow.engine.FlowException
 import io.beansnapper.flow.engine.ObjectNotFound
 import java.util.*
@@ -13,19 +11,29 @@ import kotlin.concurrent.read
  * FUTURE: convert this to abstract to support persistence
  */
 object Cache {
-    private val cache = HashMap<RefId<in DataObject<Any>>, DataObject<Any>>()
+    private val cache = HashMap<ObjectId<Any>, DataObject<Any>>()
     private val lock = ReentrantReadWriteLock()
 
     private fun genId(): String = UUID.randomUUID().toString()
 
-    fun <T : Any> fetch(id: RefId<in DataObject<T>>): T {
+    fun <T : Any> fetch(stringId: String): T {
         lock.read {
             @Suppress("UNCHECKED_CAST", "TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
-            return (cache.get(id) ?: throw ObjectNotFound("Id = $id")) as T
+            return (cache.get(stringId) ?: throw ObjectNotFound("Id = $stringId")) as T
         }
     }
 
-    fun <T : Any> fetch(ids: Collection<RefId<in DataObject<T>>>) = lock.read { ids.map { fetch<T>(it) } }
+    fun <T : Any> fetch(id: ObjectId<T>): T {
+        val obj: T = fetch(id.id ?: throw Exception("Id is unset for $id"))
+        id.obj = obj  // atomic set with a potentially newer object
+        return obj
+    }
+
+    /**
+     * for a collection of ObjectIds - make sure all references have been resolved
+     */
+    fun <T : Any> fetch(ids: Collection<ObjectId<T>>) =
+        lock.read { ids.forEach { fetch<T>(it) } }
 
     /**
      * insert object
