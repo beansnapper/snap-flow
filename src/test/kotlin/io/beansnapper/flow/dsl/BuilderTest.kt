@@ -13,7 +13,7 @@ class BuilderTest : StringSpec({
         var first: Int? = null
         var second: Int? = null
         var third: Int? = null
-
+        
         val flowBuilder = FlowBuilder().flow {
             name = "straight-builder"
 

@@ -16,17 +16,18 @@ object Cache {
 
     private fun genId(): String = UUID.randomUUID().toString()
 
-    fun <T : Any> fetch(stringId: String): T {
+    fun <T : Any> fetch(rawId: RawId): T {
         lock.read {
             @Suppress("UNCHECKED_CAST", "TYPE_INFERENCE_ONLY_INPUT_TYPES_WARNING")
-            return (cache.get(stringId) ?: throw ObjectNotFound("Id = $stringId")) as T
+            return (cache.get(rawId) ?: throw ObjectNotFound("Id = $rawId")) as T
         }
     }
 
     fun <T : Any> fetch(id: ObjectId<T>): T {
-        val obj: T = fetch(id.id ?: throw Exception("Id is unset for $id"))
-        id.obj = obj  // atomic set with a potentially newer object
-        return obj
+        // TODO: looks like a kotlin bug.
+        val t: T = fetch(id.id ?: throw Exception("Id is unset for $id"))
+        t.also { id.obj = it }
+        return t
     }
 
     /**
