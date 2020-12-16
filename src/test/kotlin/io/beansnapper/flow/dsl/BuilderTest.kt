@@ -1,5 +1,6 @@
 package io.beansnapper.flow.dsl
 
+import io.beansnapper.flow.engine.FlowProcessor
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 
@@ -36,8 +37,8 @@ class BuilderTest : StringSpec({
 
         }
 
-        val myFlow = flowBuilder.build()
-        val engine = FlowEngine()
+        val flow = flowBuilder.build()
+        FlowProcessor(flow).run()
 
         first shouldBe 1
         second shouldBe 2

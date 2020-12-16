@@ -6,7 +6,7 @@ import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
-class FlowProcessor(flow: Flow, val context: FlowContext, private val start: Step? = null) {
+class FlowProcessor(flow: Flow, val context: FlowContext = FlowContext(), private val start: Step? = null) {
     internal val flow = XFlow(flow)
 
     fun run() {

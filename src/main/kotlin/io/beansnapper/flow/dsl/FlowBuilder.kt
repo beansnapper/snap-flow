@@ -43,6 +43,7 @@ class FlowBuilder() {
 
     class WireBuilder(
         val flow: FlowBuilder,
+        var name: String? = null,
         var fromStep: StepBuilder? = null,
         var toStep: StepBuilder? = null,
     ) {
@@ -52,7 +53,7 @@ class FlowBuilder() {
 
         fun thenDo(stepName: String): WireBuilder {
             toStep = flow.getStep(stepName)
-            return WireBuilder(flow, toStep)
+            return WireBuilder(flow, null, toStep)
         }
 
         fun andTerminate(stepName: String? = null) {
@@ -69,9 +70,10 @@ class FlowBuilder() {
             return Wire(
                 null,
                 null,
+                name,
                 ObjectId((fromStep ?: throw BuilderException("Wire is not fully defined")).build()),
                 ObjectId((toStep ?: throw BuilderException("Wire is not fully defined")).build())
-            )
+            ) { _ -> true }
         }
 
     }
@@ -95,7 +97,7 @@ class FlowBuilder() {
     fun start(name: String): WireBuilder {
         val step = getStep(name)
         defaultStart = step
-        return WireBuilder(this, step)
+        return WireBuilder(this, null, step)
     }
 
     fun build(): Flow {
