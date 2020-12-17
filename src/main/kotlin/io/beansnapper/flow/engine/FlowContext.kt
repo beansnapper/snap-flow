@@ -15,7 +15,7 @@ class FlowContext {
         }
     }
 
-    fun get(key: String): Any? {
+    operator fun get(key: String): Any? {
         lock.read {
             @Suppress("UNCHECKED_CAST")
             return map[key]

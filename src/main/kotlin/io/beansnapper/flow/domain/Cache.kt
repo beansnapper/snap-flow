@@ -24,10 +24,8 @@ object Cache {
     }
 
     fun <T : Any> fetch(id: ObjectId<T>): T {
-        // TODO: looks like a kotlin bug.
-        val t: T = fetch(id.id ?: throw Exception("Id is unset for $id"))
-        t.also { id.obj = it }
-        return t
+        return fetch<T>(id.rawId ?: throw Exception("Id is unset for $id"))
+            .also { id.obj = it }
     }
 
     /**

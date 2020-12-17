@@ -6,10 +6,10 @@ import mu.KotlinLogging
 
 private val log = KotlinLogging.logger {}
 
-class FlowProcessor(flow: Flow, val context: FlowContext = FlowContext(), private val start: Step? = null) {
+class FlowProcessor(flow: Flow, private val start: Step? = null) {
     internal val flow = XFlow(flow)
 
-    fun run() {
+    fun run(context: FlowContext) {
         log.debug { "Starting $flow" }
         if (start != null) {
             flow.steps[start.name]
@@ -20,20 +20,20 @@ class FlowProcessor(flow: Flow, val context: FlowContext = FlowContext(), privat
         } else flow.defaultStart
 
         do {
-            execute(current)
+            execute(current, context)
             if (current.data.terminalStep) {
                 log.debug { "Found Terminal $current" }
                 break
             }
-            current = next(current)
+            current = next(current, context)
         } while (true)
         log.debug { "$flow terminated normally" }
     }
 
-    private fun execute(current: XFlow.XStep) {
+    private fun execute(current: XStep, context: FlowContext) {
         try {
             log.debug { "Executing $current" }
-            current.action.invoke()
+            current.action.invoke(context)
         } catch (e: Exception) {
             val msg = "Uncaught exception executing $flow:$current - $e"
             log.error { msg }
@@ -44,9 +44,11 @@ class FlowProcessor(flow: Flow, val context: FlowContext = FlowContext(), privat
     /**
      * determine the next step
      */
-    private fun next(current: XFlow.XStep): XFlow.XStep {
+    private fun next(current: XStep, context: FlowContext): XStep {
         current.wires.forEach { wire ->
-            if (wire.data.predicate.test(context)) return wire.toStep;
+            if (wire.data.predicate(context)) {
+                return wire.toStep
+            }
         }
         throw FlowException("$current has no next step with a positive predicate")
     }

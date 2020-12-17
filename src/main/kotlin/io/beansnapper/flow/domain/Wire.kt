@@ -1,7 +1,6 @@
 package io.beansnapper.flow.domain
 
 import io.beansnapper.flow.engine.FlowContext
-import java.util.function.Predicate
 
 /**
  * A wire represents a directed transition from one step to another.  It's often
@@ -10,9 +9,12 @@ import java.util.function.Predicate
 data class Wire(
     override val id: ObjectId<Wire>? = null,
     override val timestamp: Timestamp? = null,
-    val name: String? = null,
     val from: ObjectId<Step>,
     val to: ObjectId<Step>,
-    val predicate: Predicate<FlowContext>,
-) : DataObject<Wire>
+    val priority: Int,
+    val predicate: (FlowContext) -> Boolean,
+) : DataObject<Wire> {
+
+    override fun toString() = "Wire from ${from.value.name} to ${to.value.name}"
+}
 

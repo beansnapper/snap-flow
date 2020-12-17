@@ -1,6 +1,6 @@
 package io.beansnapper.flow.domain
 
-class ObjectId<T : Any>(val id: RawId? = null) {
+class ObjectId<T : Any>(val rawId: RawId? = null) {
     internal lateinit var obj: T
     val value: T
         get() {
@@ -14,5 +14,12 @@ class ObjectId<T : Any>(val id: RawId? = null) {
         this.obj = value
     }
 
+    override fun toString(): String {
+        return if (this::obj.isInitialized)
+            obj.toString()
+        else
+            rawId ?: "[unknown]"
+
+    }
 
 }
