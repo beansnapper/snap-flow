@@ -2,7 +2,7 @@ package io.beansnapper.flow.engine
 
 import java.util.*
 
-typealias ActionLambda = () -> Unit
+typealias ActionLambda = (FlowContext) -> Unit
 
 object FlowDefinitions {
 

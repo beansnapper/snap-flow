@@ -2,6 +2,7 @@ package io.beansnapper.flow.dsl
 
 import io.beansnapper.annotations.NotThreadSafe
 import io.beansnapper.flow.domain.*
+import io.beansnapper.flow.engine.FlowContext
 
 const val defaultName = "unknown"
 const val defaultTerminateName = "#terminate"
@@ -18,6 +19,7 @@ class FlowBuilder() {
     val wires = mutableListOf<WireBuilder>()
 
     fun getStep(name: String) = steps[name] ?: throw BuilderException("no step named $name")
+    override fun toString() = "Flow $name"
 
     class BuilderException(
         override val message: String? = null,
@@ -33,27 +35,37 @@ class FlowBuilder() {
     ) {
         private var theStep: Step? = null
 
+        override fun toString() = "Step $name"
+
         fun build(): Step {
-            if (theStep == null) {
-                theStep = Step(null, null, name, action, startStep, terminalStep)
-            }
-            return theStep!!
+            return theStep ?: Step(null, null, name, action, startStep, terminalStep)
+                .also { theStep = it }
         }
     }
 
     class WireBuilder(
         val flow: FlowBuilder,
-        var name: String? = null,
         var fromStep: StepBuilder? = null,
         var toStep: StepBuilder? = null,
+        var predicate: (FlowContext) -> Boolean = { _ -> true },
+        var priority: Int = 0,
     ) {
-        init {
-            flow.wires.add(this)
+        override fun toString(): String {
+            return "Wire from ${fromStep?.name} to ${toStep?.name}"
         }
 
         fun thenDo(stepName: String): WireBuilder {
             toStep = flow.getStep(stepName)
-            return WireBuilder(flow, null, toStep)
+            flow.wires.add(this)
+            return WireBuilder(flow, toStep, null)
+        }
+
+        fun thenDoIf(stepName: String, predicate: (FlowContext) -> Boolean): WireBuilder {
+            flow.wires.add(this)
+            this.toStep = flow.getStep(stepName)
+            this.priority = 20
+            this.predicate = predicate
+            return WireBuilder(flow, toStep)
         }
 
         fun andTerminate(stepName: String? = null) {
@@ -64,16 +76,18 @@ class FlowBuilder() {
                 if (!step.terminalStep) throw BuilderException("Step $stepName is not terminal")
                 step
             }
+            flow.wires.add(this)
         }
 
         internal fun build(): Wire {
             return Wire(
                 null,
                 null,
-                name,
                 ObjectId((fromStep ?: throw BuilderException("Wire is not fully defined")).build()),
-                ObjectId((toStep ?: throw BuilderException("Wire is not fully defined")).build())
-            ) { _ -> true }
+                ObjectId((toStep ?: throw BuilderException("Wire is not fully defined")).build()),
+                priority,
+                predicate
+            )
         }
 
     }
@@ -97,7 +111,12 @@ class FlowBuilder() {
     fun start(name: String): WireBuilder {
         val step = getStep(name)
         defaultStart = step
-        return WireBuilder(this, null, step)
+        return WireBuilder(this, fromStep = step)
+    }
+
+    fun wire(name: String): WireBuilder {
+        val step = getStep(name)
+        return WireBuilder(this, fromStep = step)
     }
 
     fun build(): Flow {
