@@ -111,4 +111,52 @@ class BasicTest : StringSpec({
         third shouldBe 3
 
     }
+
+
+    "circular workflow" {
+
+        class Data {
+            var first: Int = 0
+            var second: Int = 0
+            var third: Int = 0
+        }
+
+        val flowBuilder = FlowBuilder().flow {
+            name = "straight-flow"
+
+            step("First") {
+                println("First Operation")
+                (it["data"] as Data).first++
+            }
+            step("Second") {
+                println("Second Operation")
+                (it["data"] as Data).second++
+            }
+            step("Third") {
+                println("Third Operation")
+                (it["data"] as Data).third++
+            }
+
+            start("First")
+                .thenDo("Second")
+                .thenDo("Third")
+                .andTerminate()
+
+            wire("Third").thenDoIf("First") {
+                (it["data"] as Data).third < 10
+            }
+
+        }
+
+        val flow = flowBuilder.build()
+        val context = FlowContext()
+        val data = Data()
+        context["data"] = data
+        FlowProcessor(flow).run(context)
+
+        data.first shouldBe 10
+        data.second shouldBe 10
+        data.third shouldBe 10
+    }
+
 })
