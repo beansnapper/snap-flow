@@ -10,7 +10,7 @@ class BasicTest : StringSpec({
 
     "simple one two three" {
 
-        var counter: Int = 0
+        var counter = 0
         var first: Int? = null
         var second: Int? = null
         var third: Int? = null
@@ -47,69 +47,66 @@ class BasicTest : StringSpec({
         third shouldBe 3
     }
 
-    var counter: Int = 0
-    var first: Int? = null
-    var second: Int? = null
-    var third: Int? = null
 
-    val conditionalFlow = FlowBuilder().flow {
-        name = "simple-conditional"
-
-        step("First") {
-            println("First Operation")
-            first = ++counter
-        }
-        step("Second") {
-            println("Second Operation")
-            second = ++counter
-        }
-        step("Third") {
-            println("Third Operation")
-            third = ++counter
+    "conditional branch" {
+        class Data {
+            var counter: Int = 0
+            var first: Int? = null
+            var second: Int? = null
+            var third: Int? = null
         }
 
-        start("First")
-            .thenDo("Third")
-            .andTerminate()
+        val conditionalFlow = FlowBuilder().flow {
+            name = "simple-conditional"
 
-        wire("First")
-            .thenDoIf("Second") { context ->
-                (context["flag"] ?: false) as Boolean
+            step("First") { context ->
+                println("First Operation")
+                val data = context["data"] as Data
+                data.first = ++data.counter
             }
-            .thenDo("Third")
+            step("Second") { context ->
+                println("Second Operation")
+                val data = context["data"] as Data
+                data.second = ++data.counter
+            }
+            step("Third") { context ->
+                println("Third Operation")
+                val data = context["data"] as Data
+                data.third = ++data.counter
+            }
 
-    }.build()
+            start("First")
+                .thenDo("Third")
+                .andTerminate()
 
+            wire("First")
+                .thenDoIf("Second") { context ->
+                    (context["flag"] ?: false) as Boolean
+                }
+                .thenDo("Third")
 
-    "conditional branch is false" {
-        // reset
-        counter = 0
-        first = null
-        second = null
-        third = null
+        }.build()
 
         // flow where condition is false
-        val context = FlowContext()
-        FlowProcessor(conditionalFlow).run(context)
-        first shouldBe 1
-        second shouldBe null
-        third shouldBe 2
-    }
+        run {
+            val context = FlowContext()
+            val data = Data().also { context["data"] = it }
+            FlowProcessor(conditionalFlow).run(context)
+            data.first shouldBe 1
+            data.second shouldBe null
+            data.third shouldBe 2
+        }
 
-    "conditional branch - condition is true" {
-        // reset
-        counter = 0
-        first = null
-        second = null
-        third = null
-
-        val context = FlowContext()
-        context["flag"] = true
-        FlowProcessor(conditionalFlow).run(context)
-        first shouldBe 1
-        second shouldBe 2
-        third shouldBe 3
-
+        // flow where condition is true
+        run {
+            val context = FlowContext()
+            val data = Data().also { context["data"] = it }
+            context["flag"] = true
+            FlowProcessor(conditionalFlow).run(context)
+            data.first shouldBe 1
+            data.second shouldBe 2
+            data.third shouldBe 3
+        }
     }
 
 
